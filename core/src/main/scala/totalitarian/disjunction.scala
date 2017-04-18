@@ -4,10 +4,11 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.language.existentials
 import scala.language.higherKinds
 import scala.annotation.implicitNotFound
+import scala.language.implicitConversions
 
 /** companion object for [[Disjunct]] type, including factory methods */
 object Disjunct {
-  
+
   /** intermediate class for the construction of new [[Disjunct]]s */
   final case class OfType[Type]() {
 
@@ -136,11 +137,18 @@ class Disjunct[-Type](val value: T forSome { type T >: Type }, val typeTag: Type
 
 /** factory object for creating new [[WhenClause]]s */
 object on {
+  /** intermediate factory object for creating a new [[WhenClause]] */
   case class OfType[T]() {
+    /** constructs a new [[WhenClause]] with the given `action` */
     def apply[Return: TypeTag](action: T => Return)(implicit ev: TypeTag[T]) =
       new Disjunct.WhenClause[T, Return, Return](action)(ev, implicitly[TypeTag[Return]])
+    
+    /** constructs a new [[WhenClause]] returning the given value */
+    def apply[Return: TypeTag](value: Return)(implicit ev: TypeTag[T]) =
+      new Disjunct.WhenClause[T, Return, Return]({ _ => value })(ev, implicitly[TypeTag[Return]])
   }
   
+  /** construct an intermediate [[OfType]] instance for creating a [[WhenClause]] */
   def apply[T] = OfType[T]()
     
 }
