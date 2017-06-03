@@ -6,11 +6,28 @@ import scala.language.higherKinds
 import scala.annotation.implicitNotFound
 import scala.language.implicitConversions
 
-class Relation[TypedRelation[_, _]] {
-  
+import annotation.unchecked.{uncheckedVariance => uv}
+
+import language.dynamics
+
+case class TypeIndex[T](tag: TypeTag[T]) {
+  override def equals(that: Any): Boolean = that match {
+    case that: TypeIndex[_] =>
+      tag.tpe =:= that.tag.tpe
+    case _ =>
+      false
+  }
+
+  override def hashCode: Int = tag.tpe.hashCode
+}
+
+class Relation {
+
+  case class Keying[K, V]()
+
   /** companion object for [[Disjunct]] type, including factory methods */
   object Disjunct {
-
+  
     /** intermediate class for the construction of new [[Disjunct]]s */
     final case class OfType[Type]() {
 
@@ -144,28 +161,88 @@ class Relation[TypedRelation[_, _]] {
       /** constructs a new [[WhenClause]] with the given `action` */
       def apply[Return: TypeTag](action: T => Return)(implicit ev: TypeTag[T]) =
         new Disjunct.WhenClause[T, Return, Return](action)(ev, implicitly[TypeTag[Return]])
-      
-      /** constructs a new [[WhenClause]] returning the given value */
-      def apply[Return: TypeTag](value: Return)(implicit ev: TypeTag[T]) =
-        new Disjunct.WhenClause[T, Return, Return]({ _ => value })(ev, implicitly[TypeTag[Return]])
     }
+    
+    /** constructs a new [[WhenClause]] returning the given value */
+    def apply[T, Return: TypeTag](typ: T)(value: Return)(implicit ev: TypeTag[T]) =
+      new Disjunct.WhenClause[T, Return, Return]({ _ => value })(ev, implicitly[TypeTag[Return]])
     
     /** construct an intermediate [[OfType]] instance for creating a [[WhenClause]] */
     def apply[T] = OfType[T]()
       
   }
+
+  /*object at {
+    def apply[K: TypeTag](key: K): AtType[K] = AtValue[K]()
+
+    case class AtValue[K: TypeTag]() {
+      def apply[V]: Disjunct.WhenClause[K, Value, Value]
+    }
+  }*/
+
+  object Conjunct extends Dynamic {
+    def apply[K, V](value: V)(implicit typeTag: TypeTag[K], rel: Keying[K, V]): Conjunct[K] =
+      new Conjunct[K](Map(TypeIndex(implicitly[TypeTag[K]]) -> value))
+  
+    def of[K]: Construct[K] = new Construct[K]()
+    
+    type ValueRelation[K <: AnyRef] = ({ type L[V] = Keying[K, V] })
+    def key[K <: AnyRef: TypeTag, V](key: K, value: V)(implicit rel: Keying[key.type, V]): Conjunct[key.type] = Conjunct[key.type, V](value)
+
+    class Construct[K]() {
+      def apply[V](value: V)(implicit typeTag: TypeTag[K], rel: Keying[K, V]): Conjunct[K] =
+        Conjunct[K, V](value)
+    }
+  }
+
+  class Conjunct[Type](val values: Map[TypeIndex[_], Any]) extends Dynamic {
+   
+    def selectDynamic[S <: String: TypeTag, V](key: S)(implicit rel: Keying[key.type, V], ev: Type <:< key.type) = apply[key.type]()
+
+    override def toString: String = values.map(_._2.toString).mkString("{", ", ", "}")
+    
+    def plus[K: TypeTag, V](value: V)(implicit rel: Keying[K, V],
+                                               ev: NotEqual[Type, Type with K]): Conjunct[Type with K] =
+      new Conjunct[Type with K](values.updated(TypeIndex(implicitly[TypeTag[K]]), value))
+ 
+    def and[K]: And[K] = new And[K]()
+    
+    class And[K]() {
+      def apply[V](value: V)(implicit typeTag: TypeTag[K],
+                                      rel: Keying[K, V],
+                                      ev: NotEqual[Type, Type with K]): Conjunct[Type with K] =
+        new Conjunct[Type with K](values.updated(TypeIndex(implicitly[TypeTag[K]]), value))
+    }
+ 
+    def merge[Ks: TypeTag](that: Conjunct[Ks]): Conjunct[Type with Ks] =
+      new Conjunct[Type with Ks](values ++ that.values)
+ 
+    def apply[K]: Apply[K] = new Apply[K]()
+    
+    class Apply[K]() {
+      def apply[V]()(implicit tt: TypeTag[K], ev: Type <:< K, rel: Keying[K, V]): V =
+        values(TypeIndex(tt)).asInstanceOf[V]
+    }
+  
+    def subset[Ks](implicit tag: TypeTag[Ks], ev: Type <:< Ks): Conjunct[Ks] =
+      new Conjunct[Ks](values.filterKeys { k => tag.tpe <:< k.tag.tpe })
+  }
+
+  trait NotEqual_1 {
+    implicit def notEqual3[A, B] = NotEqual[A, B]()
+  }
+  
+  object NotEqual extends NotEqual_1 {
+    implicit def areEqual[A]: NotEqual[A, A] = NotEqual[A, A]()
+    implicit def areEqual2[A]: NotEqual[A, A] = NotEqual[A, A]()
+  }
+
+  //@annotation.implicitAmbiguous("the conjunction already contains this type")
+  case class NotEqual[A, B]()
+
 }
 
-object Testing {
-
-  case class Keyed[K, V]()
-
-  implicit val intString: Keyed[Int, String] = Keyed[Int, String]()
-
-  val foo = new Relation[Keyed]
-
-  val disj = foo.Disjunct(1)
-  val disj2 = foo.Disjunct("two")
-  val disj3: Int = List(disj, disj2)
-
+object ident extends Relation {
+  implicit def sameType[T]: Keying[T, T] = Keying[T, T]()
 }
+
