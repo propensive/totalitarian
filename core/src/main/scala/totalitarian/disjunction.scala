@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 
 import annotation.unchecked.{uncheckedVariance => uv}
 
-import language.dynamics
+import language.dynamics, language.experimental.macros
 
 case class TypeIndex[T](tag: TypeTag[T]) {
   override def equals(that: Any): Boolean = that match {
@@ -27,7 +27,7 @@ class Relation {
 
   /** companion object for [[Disjunct]] type, including factory methods */
   object Disjunct {
-  
+
     /** intermediate class for the construction of new [[Disjunct]]s */
     final case class OfType[Type]() {
 
@@ -243,6 +243,9 @@ class Relation {
 }
 
 object ident extends Relation {
+  
+  def from[T](value: T): Disjunct[Nothing] = macro Macros.coproduct[T]
+  
   implicit def sameType[T]: Keying[T, T] = Keying[T, T]()
 }
 
