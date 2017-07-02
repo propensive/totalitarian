@@ -71,6 +71,4 @@ val s: String = disj.when(
 )
 ```
 
-*No macros were used in the development of this library.*
-
 
