@@ -7,6 +7,13 @@ lazy val core = project
   .settings(publishSettings: _*)
   .settings(scalaMacroDependencies: _*)
   .settings(moduleName := "totalitarian")
+  .settings(
+    Seq(
+      tutSourceDirectory := baseDirectory.value / "..",
+      tutNameFilter := "README\\.md".r
+    )
+  )
+  .enablePlugins(TutPlugin)
 
 lazy val examples = project
   .in(file("examples"))

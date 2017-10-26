@@ -1,0 +1,37 @@
+# sbt
+lib_managed
+project/project
+target
+
+# Worksheets (Eclipse or IntelliJ)
+*.sc
+
+# Eclipse
+.cache*
+.classpath
+.project
+.scala_dependencies
+.settings
+.target
+.worksheet
+
+# IntelliJ
+.idea
+
+# ENSIME
+.ensime
+.ensime_lucene
+.ensime_cache
+
+# Mac
+.DS_Store
+
+# Vim
+.*.sw[a-z]
+*.un~
+Session.vim
+
+# Windows
+Thumbs.db
+Desktop.ini
+
