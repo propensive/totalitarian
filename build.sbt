@@ -20,6 +20,7 @@ lazy val tests = project
   .in(file("tests"))
   .settings(buildSettings: _*)
   .settings(noPublishSettings: _*)
+  .settings(unmanagedSettings: _*)
   .settings(moduleName := "totalitarian-tests")
   .settings(quasiQuotesDependencies)
   .dependsOn(examples)
@@ -28,7 +29,7 @@ lazy val buildSettings = Seq(
   organization := "com.propensive",
   scalaVersion := "2.12.2",
   name := "totalitarian",
-  version := "1.0.0",
+  version := "0.1.0",
   scalacOptions ++= Seq("-deprecation", "-feature", "-Ywarn-value-discard", "-Ywarn-dead-code", "-Ywarn-nullary-unit", "-Ywarn-numeric-widen", "-Ywarn-inaccessible", "-Ywarn-adapted-args"),
   crossScalaVersions := Seq("2.10.6", "2.11.8", "2.12.1"),
   scmInfo := Some(ScmInfo(url("https://github.com/propensive/totalitarian"),
@@ -74,6 +75,14 @@ lazy val publishSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value
 )
+
+lazy val unmanagedSettings = unmanagedBase := (scalaVersion.value
+  .split("\\.")
+  .map(_.toInt)
+  .to[List] match {
+  case List(2, 12, _) => baseDirectory.value / "lib" / "2.12"
+  case List(2, 11, _) => baseDirectory.value / "lib" / "2.11"
+})
 
 lazy val noPublishSettings = Seq(
   publish := (),

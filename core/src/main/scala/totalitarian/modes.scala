@@ -95,39 +95,6 @@ trait Mode[+Group <: MethodConstraint] { mode =>
     wrap(blk.get)
 }
 
-object repl {
-
-  var showStackTraces: Boolean = false
-  private var lastExceptionValue: Throwable = new SilentException
-
-  def lastException: Nothing = throw lastExceptionValue
-
-  implicit def modeImplicit[Group <: MethodConstraint] = new Repl[Group]
-
-  class SilentException extends Throwable {
-    override def printStackTrace(pw: java.io.PrintWriter) = ()
-  }
-
-  class Repl[+Group <: MethodConstraint] extends Mode[Group] {
-
-    type Wrap[+Return, E <: Exception] = T2 forSome { type T2 <: Return }
-    def wrap[Return, E <: Exception](blk: => Return): Return =
-      try blk
-      catch {
-        case e: Exception =>
-          if (showStackTraces) throw e
-          else {
-            Console.println("Execution failed with exception: " + e.toString)
-            Console.print("For the full stacktrace, see repl.lastException.")
-            lastExceptionValue = e
-            throw new SilentException()
-          }
-      }
-
-    def unwrap[Return](value: => Wrap[Return, _ <: Exception]): Return = value
-  }
-}
-
 package mitigation {
 
   object throwExceptions extends Mode.Import[ThrowExceptionsMode] {
