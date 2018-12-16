@@ -19,12 +19,9 @@
 
 package totalitarian
 
-import scala.language.existentials
 import scala.language.higherKinds
 import scala.annotation.implicitNotFound
 import scala.language.implicitConversions
-
-import annotation.unchecked.{uncheckedVariance => uv}
 
 import language.dynamics, language.experimental.macros
 import scala.reflect.macros.whitebox
